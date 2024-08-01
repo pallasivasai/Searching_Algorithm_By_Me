@@ -132,4 +132,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **How to Run:** Instructions for cloning, compiling, and running the code.
 - **License:** A placeholder for licensing information.
 
-This `README.md` format is standard for GitHub repositories and provides clear, organized documentation for users and collaborators.
+
