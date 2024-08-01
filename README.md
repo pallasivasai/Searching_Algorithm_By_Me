@@ -1,5 +1,5 @@
 ```markdown
-# Constant Time Search with HashMap
+# Searching_Algorithm_By_Me
 
 This Java program demonstrates how to use a `HashMap` to perform constant time search operations with character keys and string values. The program allows users to input key-value pairs and search for a specific key, retrieving its corresponding value.
 
