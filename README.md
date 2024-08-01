@@ -1,5 +1,3 @@
-Here's a sample `README.md` file format that you can use for your GitHub repository:
-
 ```markdown
 # Constant Time Search with HashMap
 
