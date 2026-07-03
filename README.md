@@ -2,6 +2,7 @@
 
 This Java program demonstrates how to use a `HashMap` to perform constant time search operations with character keys and string values. The program allows users to input key-value pairs and search for a specific key, retrieving its corresponding value.
 
+
 ## Table of Contents
 - [Introduction](#introduction)
 - [How It Works](#how-it-works)
