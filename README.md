@@ -58,28 +58,21 @@ For a bucket containing `b` records, the implementation allocates a table of siz
 
 `search(q)` first searches for `q` as a key. If that fails, it checks the reverse dictionary for a matching value and searches using the first associated key.
 
-## 📊 Search Architecture
+## 🏗️ Search Architecture
 
-```text
-User Query
-    │
-    ├── key ──────► _search_by_key()
-    │                    │
-    │                    ├── First-level bucket
-    │                    │
-    │                    └── Second-level slot
-    │                              │
-    │                              ▼
-    │                         Result value
-    │
-    └── value ─────► reverse dictionary
-                          │
-                          ▼
-                     matching key
-                          │
-                          ▼
-                    _search_by_key()
+```mermaid
+flowchart TD
+    A[User Query] --> B{Key or Value?}
+    B -->|Key| C[_search_by_key]
+    C --> D[First-level Bucket]
+    D --> E[Second-level Slot]
+    E --> F[Stored Key / Value]
+    B -->|Value| G[Reverse Dictionary]
+    G --> H[Matching Key]
+    H --> C
 ```
+
+This diagram is derived from the current `SAISearch.search()` and `_search_by_key()` implementation.
 
 ## 🖥️ Streamlit Application
 
