@@ -1,137 +1,252 @@
-# Searching_Algorithm_By_Me
+# SAI Search Algorithm
 
-This Java program demonstrates how to use a `HashMap` to perform constant time search operations with character keys and string values. The program allows users to input key-value pairs and search for a specific key, retrieving its corresponding value.
+### A Secure, Two-Level Hashing Search System
+### Implemented in Python by P. Siva Sai
 
+> **Repository correction:** The older README described this project as a Java HashMap program. The current repository implementation is **Python**. The main algorithm is in `SAI_Search_Algorithm.py`, and the interactive web UI is in `app.py`.
 
+## What the repository contains
 
+The project has two connected parts:
 
-## Table of Contents
-- [Introduction](#introduction)
-- [How It Works](#how-it-works)
-- [Time Complexity](#time-complexity)
-- [Space Complexity](#space-complexity)
-- [Example Usage](#example-usage)
-- [How to Run](#how-to-run)
-- [License](#license)
+1. **SAI Search Algorithm** — the `SAISearch` Python class in `SAI_Search_Algorithm.py`.
+2. **Streamlit search application** — `app.py`, which loads CSV data from GitHub or a local upload and searches it using `SAISearch`.
 
-## Introduction
+The repository also contains `Reasearch_Paper_Topic.MD`, which documents the algorithm design and theoretical motivation.
 
-This program is designed to showcase how `HashMap` in Java can be utilized for efficient data retrieval. It uses character keys to store string values, allowing for quick lookups and efficient data management.
+## How the Python algorithm works
 
-## How It Works
+### Add data
 
-1. The user is prompted to enter the number of key-value pairs they wish to store.
-2. The user then inputs each key (a single character) and its corresponding value (a string).
-3. The user can search for a specific key, and if found, the program will display the corresponding value.
+Records are added with:
 
-```java
-import java.util.HashMap;
-import java.util.Scanner;
-
-public class ConstantTimeSearchWithCharKeyAndStringValue {
-    public static void main(String[] args) {
-        // Create a HashMap
-        HashMap<Character, String> hashMap = new HashMap<>();
-        Scanner scanner = new Scanner(System.in);
-
-        // Get the number of entries from the user
-        System.out.print("Enter the number of entries: ");
-        int numEntries = scanner.nextInt();
-        scanner.nextLine(); // Consume the newline
-
-        // Get key-value pairs from the user
-        for (int i = 0; i < numEntries; i++) {
-            System.out.print("Enter key (character) for entry " + (i + 1) + ": ");
-            char key = scanner.nextLine().charAt(0);
-            System.out.print("Enter value (string) for entry " + (i + 1) + ": ");
-            String value = scanner.nextLine();
-            hashMap.put(key, value);
-        }
-
-        // Ask the user for a key to search
-        System.out.print("Enter the key (character) to search: ");
-        char keyToSearch = scanner.nextLine().charAt(0);
-
-        // Search for the key in constant time
-        if (hashMap.containsKey(keyToSearch)) {
-            System.out.println(keyToSearch + " found with value: " + hashMap.get(keyToSearch));
-        } else {
-            System.out.println(keyToSearch + " not found.");
-        }
-
-        scanner.close();
-    }
-}
+```python
+search.add_input(key, value)
 ```
 
-## Time Complexity
+Both key and value are converted to strings and stored in `self.items`.
 
-1. **Insertion (`hashMap.put(key, value)`):**
-   - Average: **O(1)** due to efficient hashing.
-   - Worst case: **O(n)** if there are many collisions.
+### Build the index
 
-2. **Search (`hashMap.containsKey(key)` and `hashMap.get(key)`):**
-   - Average: **O(1)** due to efficient hashing.
-   - Worst case: **O(n)** if there are many collisions.
+Calling `build()` creates:
 
-3. **Loop Iteration:**
-   - Iterates `numEntries` times, resulting in **O(numEntries)**.
+- prime modulus `P = 2^61 - 1`
+- `m` first-level buckets
+- random first-level hash parameters
+- one second-level table per bucket
 
-## Space Complexity
+A key is transformed with a secret-based SHA-256 calculation:
 
-1. **HashMap Storage:**
-   - **O(n)** where `n` is the number of key-value pairs.
-
-2. **Additional Space:**
-   - Minimal extra space for variables like `scanner` and local variables.
-
-## Example Usage
-
-```plaintext
-Enter the number of entries: 3
-Enter key (character) for entry 1: A
-Enter value (string) for entry 1: APPLE
-Enter key (character) for entry 2: B
-Enter value (string) for entry 2: BANANA
-Enter key (character) for entry 3: C
-Enter value (string) for entry 3: CHERRY
-Enter the key (character) to search: B
-B found with value: BANANA
+```text
+SHA-256(secret + key)
+       |
+       v
+integer
+       |
+       v
+mod P
 ```
 
-- **Time Complexity:** O(1) on average for insertions and searches, O(n) in the worst case.
-- **Space Complexity:** O(n) for storing key-value pairs.
+The default secret is generated using `secrets.token_bytes(16)`.
 
-## How to Run
+### First-level bucket
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/yourusername/your-repository.git
-   ```
-2. **Navigate to the project directory:**
-   ```bash
-   cd your-repository
-   ```
-3. **Compile and run the program:**
-   ```bash
-   javac ConstantTimeSearchWithCharKeyAndStringValue.java
-   java ConstantTimeSearchWithCharKeyAndStringValue
-   ```
+The implementation calculates:
 
-4. **Follow the on-screen prompts to input data and perform searches.**
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+```text
+((a1 * x + b1) mod P) mod m
 ```
 
-### Explanation:
+to choose a bucket.
 
-- **Introduction:** Briefly explains the purpose of the code.
-- **How It Works:** Provides an overview of the code's functionality.
-- **Time & Space Complexity:** Details the complexity analysis.
-- **Example Usage:** Shows a sample interaction with the program.
-- **How to Run:** Instructions for cloning, compiling, and running the code.
-- **License:** A placeholder for licensing information.
+### Second-level table
 
+For a bucket with `b` items, the code creates a table of size:
 
+```text
+b²
+```
+
+It repeatedly chooses second-level hash parameters until the keys in that bucket occupy different slots.
+
+### Key search
+
+`search(q)` first treats the query as a key.
+
+The key-search path:
+
+1. hashes the query
+2. calculates the first-level bucket
+3. retrieves the bucket's second-level parameters
+4. calculates the second-level slot
+5. checks the slot
+6. verifies the stored key
+7. returns the associated value
+
+### Value search
+
+During `build()`, the code also creates `self.reverse`, a Python dictionary mapping each value to a list of keys.
+
+So if the query is not found as a key, `search(q)` checks the reverse dictionary and then searches using the first associated key.
+
+## Complexity
+
+The research note describes the key lookup design as worst-case O(1). The code itself performs a fixed number of hash/index calculations after the structure has been built.
+
+| Operation | Current implementation |
+|---|---|
+| Add input | O(1) append before build |
+| Build | Repeated bucket/secondary-table construction |
+| Key lookup after build | Constant number of hash/index operations |
+| Reverse value lookup | Python dictionary lookup, expected O(1) |
+| Storage | Secondary tables + reverse dictionary |
+
+The build phase is separate from lookup and is performed before user searches.
+
+## Streamlit application
+
+`app.py` turns the algorithm into an interactive web application.
+
+### Data source
+
+The UI offers:
+
+- **GitHub CSV**
+- **Upload CSV**
+
+For GitHub mode, the app calls the GitHub repository tree API, finds files ending in `.csv`, and loads the selected file from its raw GitHub URL.
+
+For upload mode, Streamlit reads the uploaded CSV bytes.
+
+### CSV mapping
+
+The current application uses:
+
+- first CSV column → key
+- second CSV column → value
+
+Each usable row is added to `SAISearch`, then `build()` creates the searchable structure.
+
+### Search UI
+
+After loading data, the app shows:
+
+- row count
+- column count
+- CSV preview
+- search input
+- Search button
+
+A successful lookup displays:
+
+```text
+✅ Your search is found
+```
+
+A missing lookup displays:
+
+```text
+No result found.
+```
+
+## Application flow
+
+```text
+GitHub CSV / Uploaded CSV
+            |
+            v
+       pandas DataFrame
+            |
+            v
+ First column = key
+ Second column = value
+            |
+            v
+     SAISearch.add_input()
+            |
+            v
+        SAISearch.build()
+            |
+            v
+        search(query)
+          /      \
+       key       value
+        |          |
+        +-----> result
+```
+
+## Repository files
+
+| File | Purpose |
+|---|---|
+| `SAI_Search_Algorithm.py` | Core `SAISearch` implementation |
+| `app.py` | Streamlit CSV loader, preview and search UI |
+| `requirements.txt` | Streamlit and pandas dependencies |
+| `Reasearch_Paper_Topic.MD` | Research description and algorithm diagram |
+| `New_README.md` | Earlier README draft |
+
+## Technology stack
+
+- Python
+- Streamlit
+- pandas
+- hashlib
+- secrets
+- urllib / GitHub API
+- CSV
+
+## Dependencies
+
+The current `requirements.txt` contains:
+
+```text
+streamlit>=1.40
+pandas>=2.0
+```
+
+## Run the command-line algorithm
+
+```bash
+git clone https://github.com/pallasivasai/Searching_Algorithm_By_Me.git
+cd Searching_Algorithm_By_Me
+python SAI_Search_Algorithm.py
+```
+
+The program asks for the number of key-value pairs, reads the key/value entries, builds the index, and then repeatedly accepts key/value search queries until `exit`.
+
+## Run the Streamlit application
+
+```bash
+pip install -r requirements.txt
+streamlit run app.py
+```
+
+## Example command-line flow
+
+```text
+Your Using SAI Search Algorithm by P. Siva Sai
+How many key-value pairs: 3
+Enter key: A
+Enter value: APPLE
+Enter key: B
+Enter value: BANANA
+Enter key: C
+Enter value: CHERRY
+Search key or value (or 'exit'): B
+Your search is found: BANANA
+Search key or value (or 'exit'): BANANA
+Your search is found: APPLE
+Search key or value (or 'exit'): exit
+```
+
+## Current-code notes
+
+- The executable implementation is **Python**, not Java.
+- The repository currently contains no CSV file, so the GitHub CSV option will show no available CSV until one is added; the Upload CSV path remains available.
+- Duplicate values are supported by storing a list of matching keys in `self.reverse`.
+- The research note contains theoretical/security claims; this README separates those claims from what the current Python code directly implements.
+
+## Links
+
+- [GitHub Repository](https://github.com/pallasivasai/Searching_Algorithm_By_Me)
+- [Research Note](https://github.com/pallasivasai/Searching_Algorithm_By_Me/blob/main/Reasearch_Paper_Topic.MD)
